@@ -10,9 +10,13 @@ const wedding = {
   second: 'Sreya Mandal',
   date: '2027-01-29T00:00:00+05:30',
   groomParents: 'Arun Roy & Tapasi Roy',
+  brideFather: 'Srimanta Mandal',
   brideMother: 'Sipra Mandal',
   groomAddress: ['6/1 Akshay Chakraborty Lane', 'Howrah – 711104'],
   brideAddress: ['468 Raja Bazar, Medinipur College', 'Medinipur – 721101'],
+  venue: 'Parinoy The Banquet',
+  venueAddress: 'Midnapore, West Bengal',
+  venueMapUrl: 'https://share.google/HmjJBVYDWi4dgXI1S',
 }
 const weddingDate = new Date(wedding.date)
 const dateLabel = weddingDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' })
@@ -56,7 +60,7 @@ function saveDate() {
   const nextDay=new Date(`${day}T00:00:00Z`)
   nextDay.setUTCDate(nextDay.getUTCDate()+1)
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'')
-  const content=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Wedding Invitation//EN','BEGIN:VEVENT','UID:amit-sreya-wedding-2027@local',`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${day.replaceAll('-','')}`,`DTEND;VALUE=DATE:${nextDay.toISOString().slice(0,10).replaceAll('-','')}`,`SUMMARY:${wedding.first} & ${wedding.second} Wedding`,'DESCRIPTION:Ceremony time and venue to be announced.','END:VEVENT','END:VCALENDAR'].join('\r\n')
+  const content=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Wedding Invitation//EN','BEGIN:VEVENT','UID:amit-sreya-wedding-2027@local',`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${day.replaceAll('-','')}`,`DTEND;VALUE=DATE:${nextDay.toISOString().slice(0,10).replaceAll('-','')}`,`SUMMARY:${wedding.first} & ${wedding.second} Wedding`,`LOCATION:${wedding.venue}\\, ${wedding.venueAddress}`,'DESCRIPTION:Ceremony time to be announced.','END:VEVENT','END:VCALENDAR'].join('\r\n')
   const url=URL.createObjectURL(new Blob([content],{type:'text/calendar'})),a=document.createElement('a');a.href=url;a.download='wedding.ics';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
 }
 export default function App() {
@@ -143,7 +147,7 @@ export default function App() {
       <div className="hero-text" ref={heroText} style={phase==='open'?{'--reveal':1}:undefined} aria-hidden={phase==='closed'}>
         <Heart fill="currentColor" size={24}/><p className="married">We're getting married</p><Ornament/>
         <h1>{wedding.first}</h1><p className="family">Son of<br/>{wedding.groomParents}</p><span className="ampersand">&amp;</span>
-        <h1>{wedding.second}</h1><p className="family">Daughter of<br/>{wedding.brideMother}</p>
+        <h1>{wedding.second}</h1><p className="family">Daughter of<br/>{wedding.brideFather} &amp; {wedding.brideMother}</p>
         <p className="hero-date">{dateLabel}</p>
       </div>
       {phase==='open'&&<a className="scroll-cue" href="#welcome">SCROLL<ChevronDown/></a>}
@@ -153,13 +157,18 @@ export default function App() {
       <Section title="Our Families" icon={Heart}>
         <div className="family-details"><h3>{wedding.first}</h3><p>Son of {wedding.groomParents}</p><address>{wedding.groomAddress.map(line=><span key={line}>{line}</span>)}</address></div>
         <Ornament/>
-        <div className="family-details"><h3>{wedding.second}</h3><p>Daughter of {wedding.brideMother}</p><address>{wedding.brideAddress.map(line=><span key={line}>{line}</span>)}</address></div>
+        <div className="family-details"><h3>{wedding.second}</h3><p>Daughter of {wedding.brideFather} &amp; {wedding.brideMother}</p><address>{wedding.brideAddress.map(line=><span key={line}>{line}</span>)}</address></div>
       </Section>
       <Section title="Scratch to Reveal"><ScratchHeart/><button className="pill" onClick={saveDate}><CalendarPlus size={16}/>Save the Date</button></Section>
       <Section className="gallery-section"><Ornament/><Gallery/></Section>
       <Section title="Counting Down to Forever"><Countdown/></Section>
       <Section title="Wedding Ceremony" icon={Clock3}><p className="day">{weekday}, {dateLabel}</p><p>Ceremony time to be announced.</p></Section>
-      <Section title="Venue" icon={MapPin}><p>Venue details to be announced.</p></Section>
+      <Section title="Venue" icon={MapPin}>
+        <h3>{wedding.venue}</h3>
+        <p>{wedding.venueAddress}</p>
+        <iframe title={`${wedding.venue} map`} loading="lazy" referrerPolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=Parinoy%20The%20Banquet%20Midnapore%20West%20Bengal&output=embed"/>
+        <a className="pill" href={wedding.venueMapUrl} target="_blank" rel="noreferrer"><MapPin size={16}/>Open in Google Maps</a>
+      </Section>
       <Section title="Dress Code" icon={Shirt}><h3>Women</h3><p>Elegant formal attire in pastel or jewel tones</p><h3>Men</h3><p>Suit or traditional formal wear</p></Section>
       <Section title="Gifts" icon={Gift}><p>Your love, blessings, and presence are the greatest gifts we could ever ask for.</p></Section>
       <footer><p>We can't wait to celebrate with you!</p><h2>{wedding.first} &amp; {wedding.second}</h2><Ornament/><button className="replay" onClick={replay}><RotateCcw size={14}/> Replay invitation</button></footer>

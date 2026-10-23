@@ -21,6 +21,6 @@ Personalized for Amit Roy and Sreya Mandal, 29 January 2027. Names, family detai
 - Music control plays/pauses local audio.
 - Reduced motion skips the opening and scroll animations.
 - No contact or RSVP form is included.
-- Ceremony time and venue are awaiting confirmation. Family addresses are displayed separately, not treated as ceremony venues. Unconfirmed sample reception, pre-wedding, transport and accommodation details have been removed.
+- Venue: Parinoy The Banquet, Midnapore, with the supplied Google Maps link and an embedded map search. Ceremony time is awaiting confirmation. Family addresses are displayed separately. Unconfirmed sample reception, pre-wedding, transport and accommodation details have been removed.
 
 No account credentials, analytics, purchase flows, or tracking scripts are included.
