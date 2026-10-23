@@ -14,6 +14,7 @@ Personalized for Amit Roy and Sreya Mandal, 29 January 2027. Names, family detai
 ## Interactions
 
 - Tap the cover to play the cinematic opening; scrolling unlocks on completion.
+- iPhone/Safari: the tap button remains enabled before video preload. Playback starts directly from the tap with muted inline video. If playback fails or stalls, use “Open without animation” to access the full invitation with a static backdrop.
 - Text reveal follows video time; final frame remains as the hero backdrop.
 - Scratch the heart with mouse/touch, or focus the reveal button and press Enter.
 - Save the date downloads an ICS file; carousel has automatic and manual controls.

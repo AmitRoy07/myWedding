@@ -60,8 +60,9 @@ function saveDate() {
   const url=URL.createObjectURL(new Blob([content],{type:'text/calendar'})),a=document.createElement('a');a.href=url;a.download='wedding.ics';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)
 }
 export default function App() {
-  const root=useRef(null), video=useRef(null), audio=useRef(null), heroText=useRef(null), smoothScroll=useRef(null)
-  const [phase,setPhase]=useState('closed'),[ready,setReady]=useState(false),[muted,setMuted]=useState(true),[error,setError]=useState('')
+  const root=useRef(null), video=useRef(null), audio=useRef(null), heroText=useRef(null), smoothScroll=useRef(null), playAttempt=useRef(0)
+  const [phase,setPhase]=useState('closed'),[ready,setReady]=useState(false),[muted,setMuted]=useState(true),[error,setError]=useState(''),[staticHero,setStaticHero]=useState(false)
+  useEffect(()=>()=>{playAttempt.current+=1},[])
   useEffect(()=>{const old=document.body.style.overflow;document.body.style.overflow=phase==='open'?'':'hidden';return()=>{document.body.style.overflow=old}},[phase])
   useEffect(()=>{
     if(phase!=='open')return
@@ -88,6 +89,11 @@ export default function App() {
   },[phase])
   useEffect(()=>{
     if(phase!=='opening')return
+    let lastTime=video.current.currentTime, lastProgress=Date.now()
+    const watchdog=setInterval(()=>{
+      if(video.current.currentTime>lastTime){lastTime=video.current.currentTime;lastProgress=Date.now()}
+      else if(Date.now()-lastProgress>12000){setError('The video is taking too long. You can open the invitation without the animation.');clearInterval(watchdog)}
+    },1000)
     // timeupdate fires only a few times per second. Follow video time each
     // animation frame so the text stays smooth without drifting on buffering.
     const tick=()=>{
@@ -96,22 +102,44 @@ export default function App() {
       heroText.current.style.setProperty('--reveal',eased)
     }
     gsap.ticker.add(tick)
-    return()=>gsap.ticker.remove(tick)
+    return()=>{gsap.ticker.remove(tick);clearInterval(watchdog)}
   },[phase])
+  function skipOpening() {
+    playAttempt.current+=1
+    video.current.pause()
+    setStaticHero(true)
+    setError('')
+    setPhase('open')
+  }
   async function open() {
-    if(phase!=='closed'||!ready)return
+    // Safari may not preload a frame until play() is called by a user tap.
+    // Never disable this action based on loadeddata or readyState.
+    if(phase!=='closed')return
+    const attempt=++playAttempt.current
+    const media=video.current
     setError('');setPhase('opening')
-    if(matchMedia('(prefers-reduced-motion: reduce)').matches){video.current.currentTime=Math.max(0,video.current.duration-.05);setPhase('open');return}
-    try{await video.current.play()}catch{setPhase('closed');setError('Tap again to play the invitation.')}
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){skipOpening();return}
+    media.muted=true
+    media.defaultMuted=true
+    media.playsInline=true
+    try{
+      if(media.error)media.load()
+      await media.play()
+      if(attempt!==playAttempt.current)media.pause()
+    }catch{
+      if(attempt!==playAttempt.current)return
+      setPhase('closed');setError('Playback could not start. Tap to retry or open without the animation.')
+    }
   }
   async function toggleMusic(){if(!audio.current.paused){audio.current.pause();setMuted(true)}else{try{await audio.current.play();setMuted(false)}catch{setError('Music could not play. Please try again.')}}}
-  function replay(){if(smoothScroll.current)smoothScroll.current.scrollTo(0,{immediate:true,force:true});else window.scrollTo({top:0,behavior:'instant'});video.current.pause();video.current.currentTime=0;if(heroText.current)heroText.current.style.setProperty('--reveal',0);setPhase('closed')}
+  function replay(){playAttempt.current+=1;if(smoothScroll.current)smoothScroll.current.scrollTo(0,{immediate:true,force:true});else window.scrollTo({top:0,behavior:'instant'});video.current.pause();if(video.current.readyState>=1)video.current.currentTime=0;if(heroText.current)heroText.current.style.setProperty('--reveal',0);setStaticHero(false);setError('');setPhase('closed')}
   return <main ref={root}>
     <audio ref={audio} src={asset('music.mp3')} loop preload="none"/>
     <button className="sound" onClick={toggleMusic} aria-label={muted?'Play music':'Pause music'}>{muted?<VolumeX size={18}/>:<Volume2 size={18}/>}</button>
-    <section className={`hero ${phase}`}>
-      <video ref={video} src={asset('opening.mp4')} muted playsInline preload="auto" onLoadedData={()=>setReady(true)} onEnded={()=>setPhase('open')} onError={()=>setError('The opening video could not load. Please reload.')} aria-hidden="true"/>
-      {phase==='closed'&&<button className="open-target" onClick={open} disabled={!ready} aria-label="Open invitation">{!ready&&<span>Preparing your invitation…</span>}</button>}
+    <section className={`hero ${phase} ${staticHero?'static-hero':''}`}>
+      <video ref={video} src={asset('opening.mp4')} muted playsInline preload="metadata" onLoadedData={()=>setReady(true)} onEnded={()=>setPhase('open')} onError={()=>setError('The video could not load. You can open the invitation without the animation.')} aria-hidden="true"/>
+      {phase==='closed'&&<button className="open-target" onClick={open} aria-label="Open invitation">{!ready&&<span>Tap to open your invitation</span>}</button>}
+      {phase==='opening'&&!error&&<button className="skip-opening" onClick={skipOpening}>Open without animation</button>}
       <div className="hero-text" ref={heroText} style={phase==='open'?{'--reveal':1}:undefined} aria-hidden={phase==='closed'}>
         <Heart fill="currentColor" size={24}/><p className="married">We're getting married</p><Ornament/>
         <h1>{wedding.first}</h1><p className="family">Son of<br/>{wedding.groomParents}</p><span className="ampersand">&amp;</span>
@@ -136,7 +164,7 @@ export default function App() {
       <Section title="Gifts" icon={Gift}><p>Your love, blessings, and presence are the greatest gifts we could ever ask for.</p></Section>
       <footer><p>We can't wait to celebrate with you!</p><h2>{wedding.first} &amp; {wedding.second}</h2><Ornament/><button className="replay" onClick={replay}><RotateCcw size={14}/> Replay invitation</button></footer>
     </div>
-    {error&&<div className="error" role="alert">{error}<button onClick={()=>setError('')} aria-label="Dismiss">×</button></div>}
+    {error&&<div className="error" role="alert">{error}<button onClick={()=>setError('')} aria-label="Dismiss">×</button>{phase!=='open'&&<button className="error-open" onClick={skipOpening}>Open without animation</button>}</div>}
   </main>
 }
 
